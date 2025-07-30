@@ -8,8 +8,11 @@ import (
 )
 
 func main() {
-	router := gin.Default()
+	r := gin.Default()
 	database.ConnectDatabase()
-	routes.RegisterTodoRoutes(router)
-	router.Run(":8080")
+
+	routes.AuthRoutes(r)
+	routes.TodoRoutes(r) // <- Make this protected next
+
+	r.Run(":8080")
 }

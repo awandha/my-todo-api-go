@@ -33,6 +33,10 @@ func ConnectDatabase() {
 		panic("Failed to connect to MySQL! Error: " + err.Error())
 	}
 
-	database.AutoMigrate(&models.Todo{})
+	// ✅ AutoMigrate both Todo and User models
+	err = database.AutoMigrate(&models.Todo{}, &models.User{})
+	if err != nil {
+		panic("Failed to auto-migrate models: " + err.Error())
+	}
 	DB = database
 }

@@ -53,6 +53,10 @@ The server will start at:
 👉 http://localhost:8080
 
 📚 API Endpoints
+Method	Endpoint	Description	Auth Required
+POST	/register	Register new user	No
+POST	/login	Login user, return token	No
+
 ➕ Create a Todo
 POST /todos/
 
