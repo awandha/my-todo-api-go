@@ -1,0 +1,5 @@
+.env
+todos.db
+*.log
+bin/
+*.exe
