@@ -2,8 +2,10 @@ package database
 
 import (
 	"fmt"
-	"my-todo-api/models"
+	"log"
 	"os"
+
+	"my-todo-api/models"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
@@ -12,31 +14,41 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDatabase() {
-	// Load .env file
-	err := godotenv.Load()
-	if err != nil {
-		panic("Error loading .env file")
+func getenv(key, fallback string) string {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		return v
 	}
+	return fallback
+}
 
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	dbname := os.Getenv("DB_NAME")
+func ConnectDatabase() {
+	// Try to load .env locally; ignore error in cloud
+	_ = godotenv.Load()
+
+	// Prefer Railway MySQL vars; fall back to your DB_* vars
+	host := getenv("MYSQLHOST", os.Getenv("DB_HOST"))
+	port := getenv("MYSQLPORT", os.Getenv("DB_PORT"))
+	user := getenv("MYSQLUSER", os.Getenv("DB_USER"))
+	pass := getenv("MYSQLPASSWORD", os.Getenv("DB_PASSWORD"))
+	name := getenv("MYSQLDATABASE", os.Getenv("DB_NAME"))
+
+	if host == "" || user == "" || name == "" {
+		log.Fatal("Database env vars are not set")
+	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		user, password, host, port, dbname)
+		user, pass, host, port, name)
 
-	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("Failed to connect to MySQL! Error: " + err.Error())
+		log.Fatalf("Failed to connect to MySQL: %v", err)
 	}
 
-	// ✅ AutoMigrate both Todo and User models
-	err = database.AutoMigrate(&models.Todo{}, &models.User{})
-	if err != nil {
-		panic("Failed to auto-migrate models: " + err.Error())
+	// Migrate all needed tables
+	if err := db.AutoMigrate(&models.User{}, &models.Todo{}); err != nil {
+		log.Fatalf("AutoMigrate failed: %v", err)
 	}
-	DB = database
+
+	DB = db
+	log.Println("Connected to MySQL")
 }
